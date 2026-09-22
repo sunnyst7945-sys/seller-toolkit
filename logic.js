@@ -21,10 +21,7 @@
         m:    { label: '米 (m)',    factor: 1 },
         km:   { label: '千米 (km)', factor: 1000 },
         in:   { label: '英寸 (in)', factor: 0.0254 },
-        ft:   { label: '英尺 (ft)', factor: 0.3048 },
-        yd:   { label: '码 (yd)',   factor: 0.9144 },
-        mile: { label: '英里 (mi)', factor: 1609.344 },
-        nmi:  { label: '海里 (nmi)', factor: 1852 }
+        ft:   { label: '英尺 (ft)', factor: 0.3048 }
       }
     },
     weight: {
@@ -35,9 +32,7 @@
         kg:    { label: '千克 (kg)', factor: 1 },
         t:     { label: '吨 (t)',    factor: 1000 },
         oz:    { label: '盎司 (oz)', factor: 0.028349523125 },
-        lb:    { label: '磅 (lb)',   factor: 0.45359237 },
-        jin:   { label: '市斤 (斤)', factor: 0.5 },
-        liang: { label: '市两 (两)', factor: 0.05 }
+        lb:    { label: '磅 (lb)',   factor: 0.45359237 }
       }
     },
     volume: {
@@ -46,14 +41,9 @@
         ml:      { label: '毫升 (mL)',         factor: 0.001 },
         l:       { label: '升 (L)',            factor: 1 },
         m3:      { label: '立方米 (m³)',       factor: 1000 },
-        cm3:     { label: '立方厘米 (cm³)',    factor: 0.001 },
         gal:     { label: '美制加仑 (gal)',    factor: 3.785411784 },
-        qt:      { label: '美制夸脱 (qt)',     factor: 0.946352946 },
-        pt:      { label: '美制品脱 (pt)',     factor: 0.473176473 },
         floz:    { label: '美制液量盎司 (fl oz)', factor: 0.0295735295625 },
-        cup:     { label: '美制杯 (cup)',      factor: 0.2365882365 },
-        tbsp:    { label: '汤匙 (tbsp)',       factor: 0.01478676478125 },
-        tsp:     { label: '茶匙 (tsp)',        factor: 0.00492892159375 }
+        cup:     { label: '美制杯 (cup)',      factor: 0.2365882365 }
       }
     },
     area: {
@@ -61,11 +51,8 @@
       units: {
         cm2:     { label: '平方厘米 (cm²)', factor: 1e-4 },
         m2:      { label: '平方米 (m²)',    factor: 1 },
-        km2:     { label: '平方千米 (km²)', factor: 1e6 },
-        ha:      { label: '公顷 (ha)',      factor: 10000 },
         in2:     { label: '平方英寸 (in²)', factor: 0.00064516 },
         ft2:     { label: '平方英尺 (ft²)', factor: 0.09290304 },
-        yd2:     { label: '平方码 (yd²)',   factor: 0.83612736 },
         acre:    { label: '英亩 (acre)',    factor: 4046.8564224 },
         mu:      { label: '市亩 (亩)',      factor: 666.6666667 }
       }
