@@ -62,21 +62,23 @@
    * 一、单位换算（多类别并列，输入自动换算所有单位）
    * ============================================================= */
   var UNIT_CATEGORIES = [
-    { key: 'length', icon: '📏', defaultUnit: 'cm' },
-    { key: 'weight', icon: '⚖️', defaultUnit: 'kg' },
-    { key: 'volume', icon: '🧪', defaultUnit: 'ml' },
-    { key: 'area', icon: '📐', defaultUnit: 'm2' },
-    { key: 'temperature', icon: '🌡️', defaultUnit: 'c' }
+    { key: 'length', icon: '📏' },
+    { key: 'weight', icon: '⚖️' },
+    { key: 'volume', icon: '🧪' },
+    { key: 'area', icon: '📐' },
+    { key: 'temperature', icon: '🌡️' }
   ];
+  var UNIT_COLS = 4;
 
-  function convertCategory(catEl, catKey) {
-    var from = catEl.querySelector('.unit-sel').value;
-    var raw = catEl.querySelector('.unit-value').value.trim().replace(/,/g, '');
-    var val = parseFloat(raw);
-    catEl.querySelectorAll('.unit-result-row').forEach(function (row) {
-      var unit = row.getAttribute('data-unit');
-      var r = L.convertUnit(val, from, unit, catKey);
-      row.querySelector('input').value = isNaN(r) ? '' : fmtUnitPlain(r);
+  function convertCol(catEl, catKey, srcInput) {
+    var unit = srcInput.getAttribute('data-unit');
+    var col = srcInput.getAttribute('data-col');
+    var val = parseFloat(srcInput.value.replace(/,/g, ''));
+    catEl.querySelectorAll('input[data-col="' + col + '"]').forEach(function (inp) {
+      if (inp === srcInput) return;
+      var r = L.convertUnit(val, unit, inp.getAttribute('data-unit'), catKey);
+      inp.value = isNaN(r) ? '' : fmtUnitPlain(r);
+      inp.classList.toggle('filled', !isNaN(r));
     });
   }
 
@@ -87,19 +89,21 @@
       var units = L.getUnits(cat.key);
       var catEl = document.createElement('div');
       catEl.className = 'unit-cat';
-      catEl.innerHTML =
-        '<div class="unit-cat-head">' + cat.icon + ' ' + info.label + '</div>' +
-        '<div class="unit-input-line">' +
-          '<input type="text" class="unit-value" placeholder="输入数值" inputmode="decimal" />' +
-          '<select class="unit-sel">' + units.map(function (u) { return '<option value="' + u.key + '">' + u.label + '</option>'; }).join('') + '</select>' +
-        '</div>' +
-        '<div class="unit-results">' + units.map(function (u) {
-          return '<div class="unit-result-row" data-unit="' + u.key + '"><label>' + u.label + '</label><input type="text" readonly /></div>';
-        }).join('') + '</div>';
+      var html = '<div class="unit-cat-head">' + cat.icon + ' ' + info.label + '</div><div class="unit-table">';
+      html += '<div class="corner">单位</div>';
+      for (var c = 0; c < UNIT_COLS; c++) html += '<div class="col-head">值 ' + (c + 1) + '</div>';
+      units.forEach(function (u) {
+        html += '<div class="unit-label">' + u.label + '</div>';
+        for (var c2 = 0; c2 < UNIT_COLS; c2++) {
+          html += '<input type="text" inputmode="decimal" placeholder="-" data-unit="' + u.key + '" data-col="' + c2 + '" />';
+        }
+      });
+      html += '</div>';
+      catEl.innerHTML = html;
       grid.appendChild(catEl);
-      catEl.querySelector('.unit-sel').value = cat.defaultUnit;
-      catEl.querySelector('.unit-value').addEventListener('input', function () { convertCategory(catEl, cat.key); });
-      catEl.querySelector('.unit-sel').addEventListener('change', function () { convertCategory(catEl, cat.key); });
+      catEl.querySelectorAll('input').forEach(function (inp) {
+        inp.addEventListener('input', function () { convertCol(catEl, cat.key, inp); });
+      });
     });
   }
 
@@ -453,6 +457,10 @@
   function allHSData() {
     return window.HS_CODES.map(function (c) { return { code: c.code, cn: c.cn, en: c.en }; });
   }
+  function formatHsCode(code) {
+    var c = String(code);
+    return '<span class="c1">' + c.slice(0, 6) + '</span><span class="c2">' + c.slice(6, 8) + '</span><span class="c3">' + c.slice(8, 10) + '</span>';
+  }
   $('hs-search').addEventListener('click', function () {
     var lines = $('hs-input').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
     if (!lines.length) { toast('请输入关键词或编码'); return; }
@@ -467,9 +475,10 @@
         html += '<div class="result-item"><span class="in">未找到匹配，请尝试其他关键词</span></div>';
       }
       res.forEach(function (item) {
-        html += '<div class="hs-item"><span class="code">' + escapeHtml(item.code) + '</span>' +
+        html += '<div class="hs-item"><span class="code">' + formatHsCode(item.code) + '</span>' +
           '<span class="info"><span class="cn">' + escapeHtml(item.cn) + '</span><br/><span class="en">' + escapeHtml(item.en) + '</span></span>' +
-          '<button class="btn btn-outline btn-sm copy-btn">复制编码</button></div>';
+          '<a class="btn btn-outline btn-sm" href="https://www.hsbianma.com/" target="_blank" rel="noopener">核对</a>' +
+          '<button class="btn btn-primary btn-sm copy-btn">复制</button></div>';
       });
     });
     box.innerHTML = html;
