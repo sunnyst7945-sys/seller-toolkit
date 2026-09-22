@@ -37,7 +37,6 @@
 
   .layout { display: flex; min-height: 100vh; }
 
-  /* 侧边栏 */
   .sidebar {
     width: 240px; flex-shrink: 0;
     background: linear-gradient(180deg, #1e3a8a 0%, #1d4ed8 100%);
@@ -58,8 +57,7 @@
   .nav-item .ico { font-size: 18px; width: 22px; text-align: center; }
   .sidebar .footer { margin-top: auto; font-size: 11px; color: rgba(255,255,255,.6); padding-top: 20px; }
 
-  /* 主内容 */
-  .main { flex: 1; padding: 28px 36px 60px; max-width: 1000px; }
+  .main { flex: 1; padding: 28px 36px 60px; max-width: 1280px; }
   .page-head { margin-bottom: 22px; }
   .page-head h1 { font-size: 24px; font-weight: 700; }
   .page-head p { color: var(--muted); font-size: 13px; margin-top: 4px; }
@@ -84,6 +82,7 @@
   }
   input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
   textarea { resize: vertical; min-height: 90px; }
+  input[readonly] { background: #f8fafc; color: var(--primary-dark); font-weight: 600; }
   .mono { font-family: "SF Mono", Consolas, "Courier New", monospace; }
 
   .btn {
@@ -103,19 +102,48 @@
 
   .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; align-items: center; }
 
-  /* 动态行 */
-  .row {
-    display: grid; gap: 8px; align-items: center; margin-bottom: 8px;
-  }
-  .row .del { cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1; padding: 4px; }
-  .row .del:hover { color: var(--red); }
-  .result-box {
-    background: #fafbfd; border: 1px dashed var(--border); border-radius: 8px;
-    padding: 10px 12px; font-size: 14px; font-weight: 600; color: var(--primary-dark);
-    word-break: break-all; text-align: right;
-  }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-ok { background: var(--green-soft); color: var(--green); }
+  .badge-over { background: var(--red-soft); color: var(--red); }
+  .badge-info { background: var(--primary-soft); color: var(--primary); }
+  .badge-warn { background: var(--amber-soft); color: var(--amber); }
 
-  /* 结果列表 */
+  .banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; flex-wrap: wrap; }
+  .banner-info { background: var(--primary-soft); color: var(--primary-dark); border: 1px solid #dbeafe; }
+  .banner-warn { background: var(--amber-soft); color: var(--amber); border: 1px solid #fef3c7; }
+  .banner-error { background: var(--red-soft); color: var(--red); border: 1px solid #fee2e2; }
+
+  .note { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+  .note b { color: var(--text); }
+
+  /* ===== 单位换算 ===== */
+  .unit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+  .unit-cat {
+    border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: #fff;
+    transition: box-shadow .15s;
+  }
+  .unit-cat:hover { box-shadow: var(--shadow-lg); }
+  .unit-cat-head { font-weight: 700; font-size: 14px; margin-bottom: 10px; color: var(--primary-dark); }
+  .unit-input-line { display: flex; gap: 8px; margin-bottom: 10px; }
+  .unit-input-line input { flex: 1; }
+  .unit-input-line select { width: auto; max-width: 120px; }
+  .unit-result-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .unit-result-row label { flex: 1; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .unit-result-row input { width: 110px; padding: 5px 8px; font-size: 13px; text-align: right; }
+
+  /* ===== 货币换算 ===== */
+  .fx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .fx-cell {
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: #fff;
+    transition: box-shadow .15s, border-color .15s;
+  }
+  .fx-cell.active { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .fx-cell .fx-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+  .fx-cell .fx-flag { font-size: 16px; }
+  .fx-cell input { padding: 8px 10px; font-size: 15px; font-weight: 600; text-align: right; }
+  .fx-cell .fx-rate { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  /* ===== 结果列表 ===== */
   .result-list { margin-top: 8px; }
   .result-item {
     display: flex; justify-content: space-between; align-items: center;
@@ -126,22 +154,8 @@
   .result-item .out { font-weight: 700; font-size: 15px; word-break: break-all; text-align: right; }
   .result-item .copy-btn { flex-shrink: 0; }
 
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .badge-ok { background: var(--green-soft); color: var(--green); }
-  .badge-over { background: var(--red-soft); color: var(--red); }
-  .badge-info { background: var(--primary-soft); color: var(--primary); }
-  .badge-warn { background: var(--amber-soft); color: var(--amber); }
-
-  .banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
-  .banner-info { background: var(--primary-soft); color: var(--primary-dark); border: 1px solid #dbeafe; }
-  .banner-warn { background: var(--amber-soft); color: var(--amber); border: 1px solid #fef3c7; }
-  .banner-error { background: var(--red-soft); color: var(--red); border: 1px solid #fee2e2; }
-
-  .note { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
-  .note b { color: var(--text); }
-
   .hs-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: #fff; }
-  .hs-item .code { font-family: "SF Mono", Consolas, monospace; font-weight: 700; color: var(--primary-dark); background: var(--primary-soft); padding: 2px 8px; border-radius: 6px; flex-shrink: 0; }
+  .hs-item .code { font-family: "SF Mono", Consolas, monospace; font-weight: 700; color: var(--primary-dark); background: var(--primary-soft); padding: 2px 8px; border-radius: 6px; flex-shrink: 0; font-size: 13px; }
   .hs-item .info { flex: 1; }
   .hs-item .cn { font-weight: 600; }
   .hs-item .en { color: var(--muted); font-size: 12px; }
@@ -163,13 +177,17 @@
 
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-  @media (max-width: 720px) {
+
+  .output-box { min-height: 110px; font-family: "SF Mono", Consolas, "Courier New", monospace; }
+
+  @media (max-width: 860px) {
     .layout { flex-direction: column; }
     .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; padding: 14px; }
     .sidebar .brand, .sidebar .brand-sub, .sidebar .footer { display: none; }
     .nav-item { padding: 8px 10px; font-size: 13px; }
     .main { padding: 18px 16px 50px; }
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .unit-grid, .fx-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
   }
 
   .toast {
@@ -206,33 +224,10 @@
     <section class="panel active" id="tab-unit">
       <div class="page-head">
         <h1>📐 单位换算</h1>
-        <p>长度、重量、体积、面积、温度。支持多行批量换算，一行一个数值。</p>
+        <p>长度 / 重量 / 体积 / 面积 / 温度 五类并列展示。在任意一类的输入框中输入数值，自动换算出该类所有单位，无需手动选择目标单位。</p>
       </div>
       <div class="card">
-        <div class="grid-3">
-          <div>
-            <label class="field-label">换算类别</label>
-            <select id="unit-category"></select>
-          </div>
-          <div>
-            <label class="field-label">从单位</label>
-            <select id="unit-from"></select>
-          </div>
-          <div>
-            <label class="field-label">到单位</label>
-            <select id="unit-to"></select>
-          </div>
-        </div>
-        <div style="margin-top:16px;">
-          <label class="field-label">输入数值（每行一个，可粘贴多行批量换算）</label>
-          <textarea id="unit-input" placeholder="例如：&#10;100&#10;200&#10;500"></textarea>
-        </div>
-        <div class="toolbar">
-          <button class="btn btn-primary" id="unit-convert">换算</button>
-          <button class="btn btn-outline" id="unit-all">首个数值 → 全部单位对照</button>
-          <button class="btn btn-ghost" id="unit-clear">清空</button>
-        </div>
-        <div class="result-list" id="unit-result"></div>
+        <div class="unit-grid" id="unit-grid"><!-- JS 生成 --></div>
       </div>
     </section>
 
@@ -240,30 +235,15 @@
     <section class="panel" id="tab-currency">
       <div class="page-head">
         <h1>💱 货币换算</h1>
-        <p>每日实时汇率（自动更新，本地缓存 24 小时）。支持美元、英镑、欧元、加元、墨西哥比索、日元等 20+ 货币。</p>
+        <p>每日实时汇率（自动更新，缓存 24 小时）。在任意一个币种输入框中输入金额，其余币种自动同步换算。</p>
       </div>
       <div class="card">
         <div class="banner" id="fx-banner"><span class="spin" style="border-color:rgba(37,99,235,.3);border-top-color:#2563eb;"></span>&nbsp;正在加载最新汇率…</div>
-        <div class="grid-3">
-          <div>
-            <label class="field-label">金额</label>
-            <input type="number" id="fx-amount" value="100" step="any" />
-          </div>
-          <div>
-            <label class="field-label">从货币</label>
-            <select id="fx-from"></select>
-          </div>
-          <div>
-            <label class="field-label">到货币</label>
-            <select id="fx-to"></select>
-          </div>
-        </div>
+        <div class="fx-grid" id="fx-grid"><!-- JS 生成 --></div>
         <div class="toolbar">
-          <button class="btn btn-primary" id="fx-convert">换算</button>
-          <button class="btn btn-outline" id="fx-all">换算到全部货币</button>
           <button class="btn btn-outline" id="fx-refresh">🔄 刷新汇率</button>
+          <button class="btn btn-ghost" id="fx-clear">清空</button>
         </div>
-        <div class="result-list" id="fx-result"></div>
       </div>
     </section>
 
@@ -271,7 +251,7 @@
     <section class="panel" id="tab-madein">
       <div class="page-head">
         <h1>🏷️ Made in China 标注</h1>
-        <p>一键为 PDF / JPG / PNG 图片添加「Made in China」产地标识，支持批量文件，可打包 ZIP 下载。全程本地处理，文件不上传。</p>
+        <p>一键为 PDF / JPG / PNG 添加「Made in China」产地标识，支持批量文件，可打包 ZIP 下载。全程本地处理，文件不上传。</p>
       </div>
       <div class="card">
         <div class="drop-zone" id="mi-drop">
@@ -318,17 +298,17 @@
     <section class="panel" id="tab-hs">
       <div class="page-head">
         <h1>📦 HS 海关编码查询</h1>
-        <p>输入商品关键词（中/英文）或 HS 编码查询。支持多行批量查询，一行一个关键词。</p>
+        <p>输入商品关键词（中/英文）或编码查询。支持多行批量查询，一行一个关键词。返回 10 位中国海关税则编码。</p>
       </div>
       <div class="card">
         <label class="field-label">查询关键词 / 编码（每行一个）</label>
-        <textarea id="hs-input" placeholder="例如：&#10;香水&#10;perfume&#10;耳机&#10;玩具"></textarea>
+        <textarea id="hs-input" placeholder="例如：&#10;香水&#10;perfume&#10;化妆刷&#10;960330"></textarea>
         <div class="toolbar">
           <button class="btn btn-primary" id="hs-search">查询</button>
           <button class="btn btn-ghost" id="hs-clear">清空</button>
         </div>
         <div class="result-list" id="hs-result"></div>
-        <div class="note" style="margin-top:16px;"><b>说明：</b>数据依据 HS2022 通用归类整理（常用 6 位编码 + 97 个章）。实际报关请以中国海关最新《进出口税则》为准。</div>
+        <div class="note" style="margin-top:16px;"><b>说明：</b>返回 10 位编码（前 6 位国际通用 HS + 第 7-8 位中国税则细分 + 第 9-10 位附加码）。数据依据 HS2022 整理，实际报关请以中国海关最新《进出口税则》为准。</div>
       </div>
       <div class="card">
         <h2>📚 章节速查（96 章，第 77 章为保留章）</h2>
@@ -340,7 +320,7 @@
     <section class="panel" id="tab-title">
       <div class="page-head">
         <h1>✂️ 标题拆分（75 字符标题 + 125 字符亮点）</h1>
-        <p>按亚马逊惯例：标题建议 ≤ 75 字符，亮点（Bullet Point）建议 ≤ 125 字符。支持多行批量拆分。</p>
+        <p>流水线式拆分：先拆出 ≤75 字符的标题，剩下的文案自动进入亮点并按 ≤125 字符分段（保持语序、可读性）。支持多行批量。</p>
       </div>
       <div class="card">
         <div class="grid-2">
@@ -354,8 +334,8 @@
           </div>
         </div>
         <div style="margin-top:16px;">
-          <label class="field-label">输入文本（每行一个标题 / 一段亮点）</label>
-          <textarea id="title-input" placeholder="每行一个标题或亮点，粘贴后自动拆分"></textarea>
+          <label class="field-label">输入文案（每行一段完整标题/描述）</label>
+          <textarea id="title-input" placeholder="每行一段完整文案，工具会先拆 75 字符标题，剩余自动进亮点"></textarea>
         </div>
         <div class="toolbar">
           <button class="btn btn-primary" id="title-run">拆分处理</button>
@@ -370,7 +350,7 @@
     <section class="panel" id="tab-case">
       <div class="page-head">
         <h1>🔠 大小写转换</h1>
-        <p>全部大写 / 全部小写 / 首字母大写 / 句首大写。支持多行批量转换。</p>
+        <p>全部大写 / 全部小写 / 首字母大写 / 句首大写。结果合并显示在一个框内，一键复制。</p>
       </div>
       <div class="card">
         <div class="toolbar" style="margin-top:0;">
@@ -381,11 +361,12 @@
         </div>
         <label class="field-label">输入文本（每行一个）</label>
         <textarea id="case-input" placeholder="每行一个要转换的文本"></textarea>
+        <label class="field-label" style="margin-top:12px;">转换结果</label>
+        <textarea id="case-output" class="output-box" readonly placeholder="转换结果会显示在这里"></textarea>
         <div class="toolbar">
-          <button class="btn btn-outline" id="case-copy">复制全部结果</button>
+          <button class="btn btn-primary" id="case-copy">📋 一键复制全部</button>
           <button class="btn btn-ghost" id="case-clear">清空</button>
         </div>
-        <div class="result-list" id="case-result"></div>
       </div>
     </section>
 
