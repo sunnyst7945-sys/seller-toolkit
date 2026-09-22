@@ -1,0 +1,8 @@
+# 测试与生成脚本（不部署）
+test.js
+browser-test.js
+gen_test_assets.py
+create_repo.json
+_test_assets/
+node_modules/
+*.zip
