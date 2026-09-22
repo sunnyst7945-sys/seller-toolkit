@@ -138,9 +138,9 @@
   function toUpper(s) { return String(s).toUpperCase(); }
   function toLower(s) { return String(s).toLowerCase(); }
   function toTitle(s) {
-    // 每个单词首字母大写（以空白分隔），保留其余部分原样
+    // 每个单词首字母大写，其余字母转小写（Title Case）
     return String(s).replace(/\S+/g, function (w) {
-      return w.charAt(0).toUpperCase() + w.slice(1);
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
     });
   }
   function toSentence(s) {
@@ -224,6 +224,20 @@
     return { text: t, count: charCount(t), over: charCount(text) > max };
   }
 
+  /**
+   * 流水线式拆分：先拆标题（≤titleMax），剩余文案自动进入亮点（按 hlMax 分段，保持语序）。
+   * 返回 { title, titleCount, rest, highlights }
+   */
+  function splitTitleAndHighlights(text, titleMax, hlMax) {
+    var s = String(text);
+    var title = splitByLimit(s, titleMax);
+    var titleChars = Array.from(title).length;
+    var rest = Array.from(s).slice(titleChars).join('').trim();
+    var highlights = [];
+    if (rest) highlights = splitHighlight(rest, hlMax);
+    return { title: title, titleCount: charCount(title), rest: rest, highlights: highlights };
+  }
+
   /* ---------------- HS 编码查询 ---------------- */
   /**
    * 在 HS 数据中搜索：data 形如 [{code, cn, en}]
@@ -269,6 +283,7 @@
     splitByLimit: splitByLimit,
     splitHighlight: splitHighlight,
     processTitle: processTitle,
+    splitTitleAndHighlights: splitTitleAndHighlights,
     searchHS: searchHS
   };
 }));
