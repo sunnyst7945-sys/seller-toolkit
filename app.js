@@ -32,10 +32,15 @@
     if (a >= 1) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
   }
-  function fmtUnit(n) {
-    if (typeof n !== 'number' || !isFinite(n)) return '—';
-    var v = Number(n.toPrecision(9));
-    return v.toLocaleString('en-US', { maximumFractionDigits: 6 });
+  function fmtFx(n) {
+    if (typeof n !== 'number' || !isFinite(n)) return '';
+    var a = Math.abs(n);
+    if (a !== 0 && a < 0.01) return n.toFixed(4);
+    return n.toFixed(2);
+  }
+  function fmtUnitPlain(n) {
+    if (typeof n !== 'number' || !isFinite(n)) return '';
+    return String(Number(n.toPrecision(9)));
   }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -54,90 +59,56 @@
   });
 
   /* =============================================================
-   * 一、单位换算
+   * 一、单位换算（多类别并列，输入自动换算所有单位）
    * ============================================================= */
-  var unitCategory = $('unit-category');
-  var unitFrom = $('unit-from');
-  var unitTo = $('unit-to');
+  var UNIT_CATEGORIES = [
+    { key: 'length', icon: '📏', defaultUnit: 'cm' },
+    { key: 'weight', icon: '⚖️', defaultUnit: 'kg' },
+    { key: 'volume', icon: '🧪', defaultUnit: 'ml' },
+    { key: 'area', icon: '📐', defaultUnit: 'm2' },
+    { key: 'temperature', icon: '🌡️', defaultUnit: 'c' }
+  ];
 
-  function fillUnitSelects() {
-    var cats = L.getCategories();
-    unitCategory.innerHTML = cats.map(function (c) {
-      return '<option value="' + c.key + '">' + c.label + '</option>';
-    }).join('');
-    fillUnitOptions();
-    unitCategory.addEventListener('change', function () {
-      fillUnitOptions();
-      $('unit-result').innerHTML = '';
+  function convertCategory(catEl, catKey) {
+    var from = catEl.querySelector('.unit-sel').value;
+    var raw = catEl.querySelector('.unit-value').value.trim().replace(/,/g, '');
+    var val = parseFloat(raw);
+    catEl.querySelectorAll('.unit-result-row').forEach(function (row) {
+      var unit = row.getAttribute('data-unit');
+      var r = L.convertUnit(val, from, unit, catKey);
+      row.querySelector('input').value = isNaN(r) ? '' : fmtUnitPlain(r);
     });
   }
-  function fillUnitOptions() {
-    var units = L.getUnits(unitCategory.value);
-    var opts = units.map(function (u) { return '<option value="' + u.key + '">' + u.label + '</option>'; }).join('');
-    unitFrom.innerHTML = opts;
-    unitTo.innerHTML = opts;
-    // 默认选择不同单位（长度选 cm→in）
-    var def = { length: ['cm', 'in'], weight: ['kg', 'lb'], volume: ['ml', 'floz'], area: ['m2', 'ft2'], temperature: ['c', 'f'] };
-    var d = def[unitCategory.value] || [units[0].key, units[Math.min(1, units.length - 1)].key];
-    unitFrom.value = d[0];
-    unitTo.value = d[1];
-  }
 
-  $('unit-convert').addEventListener('click', function () {
-    var cat = unitCategory.value, from = unitFrom.value, to = unitTo.value;
-    var lines = $('unit-input').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
-    if (!lines.length) { toast('请输入要换算的数值'); return; }
-    var box = $('unit-result');
-    var html = '<div style="font-size:13px;color:#6b7280;margin-bottom:6px;">' +
-      L.UNIT_DATA[cat].label + '：' + L.UNIT_DATA[cat].units[from].label + ' → ' + L.UNIT_DATA[cat].units[to].label + '</div>';
-    lines.forEach(function (line) {
-      var v = parseFloat(line.replace(/,/g, ''));
-      var r = L.convertUnit(v, from, to, cat);
-      html += '<div class="result-item"><span class="in">' + escapeHtml(line) + '</span>' +
-        '<span class="out">' + (isNaN(r) ? '无效数值' : fmtUnit(r)) + '</span>' +
-        '<button class="btn btn-outline btn-sm copy-btn">复制</button></div>';
-    });
-    box.innerHTML = html;
-    bindCopyButtons(box);
-  });
-
-  $('unit-all').addEventListener('click', function () {
-    var cat = unitCategory.value, from = unitFrom.value;
-    var first = ($('unit-input').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean)[0] || '').replace(/,/g, '');
-    var v = parseFloat(first);
-    if (isNaN(v)) { toast('请输入至少一个数值'); return; }
-    var units = L.getUnits(cat);
-    var box = $('unit-result');
-    var html = '<div style="font-size:13px;color:#6b7280;margin-bottom:6px;">' + fmtUnit(v) + ' ' + L.UNIT_DATA[cat].units[from].label + ' 换算为全部单位：</div>';
-    units.forEach(function (u) {
-      var r = L.convertUnit(v, from, u.key, cat);
-      html += '<div class="result-item"><span class="in">' + u.label + '</span>' +
-        '<span class="out">' + (isNaN(r) ? '—' : fmtUnit(r)) + '</span>' +
-        '<button class="btn btn-outline btn-sm copy-btn">复制</button></div>';
-    });
-    box.innerHTML = html;
-    bindCopyButtons(box);
-  });
-
-  $('unit-clear').addEventListener('click', function () {
-    $('unit-input').value = ''; $('unit-result').innerHTML = '';
-  });
-
-  function bindCopyButtons(container) {
-    container.querySelectorAll('.copy-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var item = btn.closest('.result-item');
-        copyText(item.querySelector('.out').textContent);
-      });
+  function buildUnitConverter() {
+    var grid = $('unit-grid');
+    UNIT_CATEGORIES.forEach(function (cat) {
+      var info = L.UNIT_DATA[cat.key];
+      var units = L.getUnits(cat.key);
+      var catEl = document.createElement('div');
+      catEl.className = 'unit-cat';
+      catEl.innerHTML =
+        '<div class="unit-cat-head">' + cat.icon + ' ' + info.label + '</div>' +
+        '<div class="unit-input-line">' +
+          '<input type="text" class="unit-value" placeholder="输入数值" inputmode="decimal" />' +
+          '<select class="unit-sel">' + units.map(function (u) { return '<option value="' + u.key + '">' + u.label + '</option>'; }).join('') + '</select>' +
+        '</div>' +
+        '<div class="unit-results">' + units.map(function (u) {
+          return '<div class="unit-result-row" data-unit="' + u.key + '"><label>' + u.label + '</label><input type="text" readonly /></div>';
+        }).join('') + '</div>';
+      grid.appendChild(catEl);
+      catEl.querySelector('.unit-sel').value = cat.defaultUnit;
+      catEl.querySelector('.unit-value').addEventListener('input', function () { convertCategory(catEl, cat.key); });
+      catEl.querySelector('.unit-sel').addEventListener('change', function () { convertCategory(catEl, cat.key); });
     });
   }
 
   /* =============================================================
-   * 二、货币换算
+   * 二、货币换算（多币种联动）
    * ============================================================= */
   var CURRENCIES = [
-    { code: 'USD', name: '美元', flag: '🇺🇸' },
     { code: 'CNY', name: '人民币', flag: '🇨🇳' },
+    { code: 'USD', name: '美元', flag: '🇺🇸' },
     { code: 'EUR', name: '欧元', flag: '🇪🇺' },
     { code: 'GBP', name: '英镑', flag: '🇬🇧' },
     { code: 'JPY', name: '日元', flag: '🇯🇵' },
@@ -164,14 +135,23 @@
   var FX_RATES = null;
   var FX_UPDATED = null;
 
-  function fillCurrencySelects() {
-    var opts = CURRENCIES.map(function (c) {
-      return '<option value="' + c.code + '">' + c.flag + ' ' + c.code + ' · ' + c.name + '</option>';
-    }).join('');
-    $('fx-from').innerHTML = opts;
-    $('fx-to').innerHTML = opts;
-    $('fx-from').value = 'USD';
-    $('fx-to').value = 'CNY';
+  function buildFxGrid() {
+    var grid = $('fx-grid');
+    CURRENCIES.forEach(function (c) {
+      var cell = document.createElement('div');
+      cell.className = 'fx-cell';
+      cell.dataset.cur = c.code;
+      cell.innerHTML =
+        '<div class="fx-label"><span class="fx-flag">' + c.flag + '</span> ' + c.code + ' · ' + c.name + '</div>' +
+        '<input type="text" class="fx-input" placeholder="0.00" inputmode="decimal" />' +
+        '<div class="fx-rate"></div>';
+      grid.appendChild(cell);
+      cell.querySelector('.fx-input').addEventListener('input', function () { fxFrom(c.code); });
+      cell.querySelector('.fx-input').addEventListener('focus', function () {
+        document.querySelectorAll('.fx-cell').forEach(function (x) { x.classList.remove('active'); });
+        cell.classList.add('active');
+      });
+    });
   }
 
   function setFxBanner(type, msg) {
@@ -186,12 +166,10 @@
     try { cache = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
     var now = Date.now();
     if (!force && cache && cache.rates && cache.ts && (now - cache.ts < 24 * 3600 * 1000)) {
-      FX_RATES = cache.rates;
-      FX_UPDATED = cache.updated;
-      showFxBannerOk();
+      FX_RATES = cache.rates; FX_UPDATED = cache.updated;
+      showFxBannerOk(); updateFxRates();
       return;
     }
-    // 拉取最新
     var rates = null, updated = null, src = '';
     try {
       var r1 = await fetch('https://open.er-api.com/v6/latest/USD').then(function (r) { return r.json(); });
@@ -202,20 +180,13 @@
     if (!rates) {
       try {
         var r2 = await fetch('https://api.frankfurter.app/latest?from=USD').then(function (r) { return r.json(); });
-        if (r2 && r2.rates) {
-          rates = r2.rates; rates.USD = 1; updated = r2.date; src = 'frankfurter.app';
-        }
+        if (r2 && r2.rates) { rates = r2.rates; rates.USD = 1; updated = r2.date; src = 'frankfurter.app'; }
       } catch (e) {}
     }
-    if (!rates) {
-      setFxBanner('error', '⚠️ 汇率加载失败，请检查网络后点击「刷新汇率」。');
-      return;
-    }
+    if (!rates) { setFxBanner('error', '⚠️ 汇率加载失败，请检查网络后点击「刷新汇率」。'); return; }
     FX_RATES = rates; FX_UPDATED = updated;
-    try {
-      localStorage.setItem(KEY, JSON.stringify({ rates: rates, ts: now, updated: updated }));
-    } catch (e) {}
-    showFxBannerOk(src);
+    try { localStorage.setItem(KEY, JSON.stringify({ rates: rates, ts: now, updated: updated })); } catch (e) {}
+    showFxBannerOk(src); updateFxRates();
   }
 
   function showFxBannerOk(src) {
@@ -230,38 +201,35 @@
     }
   }
 
-  function doFxConvert(toAll) {
-    if (!FX_RATES) { toast('汇率尚未加载，请稍候或点击刷新'); return; }
-    var amount = parseFloat($('fx-amount').value);
-    if (isNaN(amount)) { toast('请输入有效金额'); return; }
-    var from = $('fx-from').value;
-    var box = $('fx-result');
-    if (toAll) {
-      var html = '<div style="font-size:13px;color:#6b7280;margin-bottom:6px;">' + fmtNum(amount) + ' ' + from + ' 换算为全部货币：</div>';
-      CURRENCIES.forEach(function (c) {
-        var r = L.convertCurrency(amount, from, c.code, FX_RATES);
-        html += '<div class="result-item"><span class="in">' + c.flag + ' ' + c.code + ' · ' + c.name + '</span>' +
-          '<span class="out">' + (isNaN(r) ? '—' : fmtNum(r) + ' ' + c.code) + '</span>' +
-          '<button class="btn btn-outline btn-sm copy-btn">复制</button></div>';
-      });
-      box.innerHTML = html;
-    } else {
-      var to = $('fx-to').value;
-      var r = L.convertCurrency(amount, from, to, FX_RATES);
-      var rate = (FX_RATES[to] && FX_RATES[from]) ? FX_RATES[to] / FX_RATES[from] : null;
-      var html = '<div style="font-size:13px;color:#6b7280;margin-bottom:6px;">' + fmtNum(amount) + ' ' + from + ' = ' +
-        (isNaN(r) ? '—' : fmtNum(r) + ' ' + to) +
-        (rate ? ' &nbsp;·&nbsp; 汇率 1 ' + from + ' = ' + fmtNum(rate) + ' ' + to : '') + '</div>';
-      box.innerHTML = html;
-    }
-    bindCopyButtons(box);
+  function updateFxRates() {
+    document.querySelectorAll('.fx-cell').forEach(function (cell) {
+      var code = cell.dataset.cur;
+      var rate = null;
+      if (FX_RATES && FX_RATES.CNY && FX_RATES[code]) {
+        rate = FX_RATES.CNY / FX_RATES[code];
+      }
+      cell.querySelector('.fx-rate').textContent = rate ? ('1 ' + code + ' = ' + fmtNum(rate) + ' CNY') : '';
+    });
   }
 
-  $('fx-convert').addEventListener('click', function () { doFxConvert(false); });
-  $('fx-all').addEventListener('click', function () { doFxConvert(true); });
+  function fxFrom(code) {
+    var input = document.querySelector('.fx-cell[data-cur="' + code + '"] .fx-input');
+    var val = parseFloat(input.value.replace(/,/g, ''));
+    if (isNaN(val) || !FX_RATES) return;
+    document.querySelectorAll('.fx-cell').forEach(function (cell) {
+      var c = cell.dataset.cur;
+      if (c === code) return;
+      var r = L.convertCurrency(val, code, c, FX_RATES);
+      cell.querySelector('.fx-input').value = isNaN(r) ? '' : fmtFx(r);
+    });
+  }
+
   $('fx-refresh').addEventListener('click', function () {
     setFxBanner('ok', '🔄 正在刷新汇率…');
-    fetchRates(true).then(function () { if (FX_RATES) { toast('汇率已更新'); doFxConvert(false); } });
+    fetchRates(true).then(function () { if (FX_RATES) toast('汇率已更新'); });
+  });
+  $('fx-clear').addEventListener('click', function () {
+    document.querySelectorAll('.fx-input').forEach(function (i) { i.value = ''; });
   });
 
   /* =============================================================
@@ -276,9 +244,7 @@
   miInput.addEventListener('change', function () { addMiFiles(miInput.files); });
   miDrop.addEventListener('dragover', function (e) { e.preventDefault(); miDrop.classList.add('dragover'); });
   miDrop.addEventListener('dragleave', function () { miDrop.classList.remove('dragover'); });
-  miDrop.addEventListener('drop', function (e) {
-    e.preventDefault(); miDrop.classList.remove('dragover'); addMiFiles(e.dataTransfer.files);
-  });
+  miDrop.addEventListener('drop', function (e) { e.preventDefault(); miDrop.classList.remove('dragover'); addMiFiles(e.dataTransfer.files); });
 
   function addMiFiles(fileList) {
     Array.from(fileList).forEach(function (f) {
@@ -298,8 +264,7 @@
       else if (r && r.error) status = '<span class="status" style="color:#dc2626;">✗ ' + escapeHtml(r.error) + '</span>';
       else if (r) status = '<span class="status" style="color:#16a34a;">✓ 已完成</span>';
       return '<div class="file-item"><span>' + icon + '</span><span class="name">' + escapeHtml(f.name) + '</span>' +
-        status +
-        '<button class="btn btn-ghost btn-sm" data-mi-del="' + i + '">移除</button></div>';
+        status + '<button class="btn btn-ghost btn-sm" data-mi-del="' + i + '">移除</button></div>';
     }).join('');
     box.querySelectorAll('[data-mi-del]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -434,17 +399,13 @@
   });
 
   function renderMiDownloadLinks() {
-    var box = $('mi-file-list');
-    // 追加下载链接区
-    var links = Object.keys(miResults).map(function (name) {
+    var links = Object.keys(miResults).filter(function (name) {
       var r = miResults[name];
-      if (r && r.error) return null;
-      if (r && r !== 'processing' && r instanceof Blob) return name;
-      return null;
-    }).filter(Boolean);
-    if (!links.length) return;
+      return r && r !== 'processing' && r instanceof Blob;
+    });
     var prev = $('mi-links');
     if (prev) prev.remove();
+    if (!links.length) return;
     var div = document.createElement('div');
     div.id = 'mi-links';
     div.style.marginTop = '12px';
@@ -487,7 +448,7 @@
   });
 
   /* =============================================================
-   * 四、HS 编码查询
+   * 四、HS 编码查询（10 位）
    * ============================================================= */
   function allHSData() {
     return window.HS_CODES.map(function (c) { return { code: c.code, cn: c.cn, en: c.en }; });
@@ -535,7 +496,7 @@
   })();
 
   /* =============================================================
-   * 五、标题拆分
+   * 五、标题拆分（流水线式：先拆标题，剩余进亮点）
    * ============================================================= */
   $('title-run').addEventListener('click', function () {
     var tLimit = parseInt($('title-limit-title').value) || 75;
@@ -546,23 +507,22 @@
     var copyBuf = [];
     lines.forEach(function (line, idx) {
       if (!line.trim()) { copyBuf.push(''); return; }
-      // 标题
-      var t = L.processTitle(line, tLimit);
-      var tBadge = t.over ? '<span class="badge badge-over">超长，已截断</span>' : '<span class="badge badge-ok">OK</span>';
-      // 亮点（拆成多段）
-      var chunks = L.splitHighlight(line, hLimit);
-      var chunkHtml = chunks.map(function (c) {
-        var over = L.charCount(c) > hLimit;
-        return '<div style="margin:2px 0;">▪ ' + escapeHtml(c) +
-          ' <span class="badge ' + (over ? 'badge-over' : 'badge-ok') + '">' + L.charCount(c) + ' 字符</span></div>';
-      }).join('');
+      var r = L.splitTitleAndHighlights(line, tLimit, hLimit);
+      var titleOver = L.charCount(line) > tLimit;
+      var chunkHtml = r.highlights.length
+        ? r.highlights.map(function (c) {
+            return '<div style="margin:2px 0;">▪ ' + escapeHtml(c) +
+              ' <span class="badge badge-ok">' + L.charCount(c) + ' 字符</span></div>';
+          }).join('')
+        : '<div style="color:#9ca3af;">（无剩余文案）</div>';
       html += '<div class="result-item" style="display:block;">' +
         '<div style="font-size:12px;color:#6b7280;margin-bottom:4px;">第 ' + (idx + 1) + ' 行 · 原文 ' + L.charCount(line) + ' 字符</div>' +
-        '<div style="margin:4px 0;"><span class="badge badge-info">标题 ≤' + tLimit + '</span> ' + tBadge +
-        '<div style="margin-top:4px;font-weight:600;">' + escapeHtml(t.text) + ' <span class="badge badge-info">' + t.count + ' 字符</span></div></div>' +
-        '<div style="margin:8px 0 4px;"><span class="badge badge-info">亮点 ≤' + hLimit + '</span>（拆为 ' + chunks.length + ' 段）</div>' + chunkHtml +
+        '<div style="margin:4px 0;"><span class="badge badge-info">标题 ≤' + tLimit + '</span> ' +
+          (titleOver ? '<span class="badge badge-over">已截断</span>' : '<span class="badge badge-ok">OK</span>') +
+        '<div style="margin-top:4px;font-weight:600;">' + escapeHtml(r.title) + ' <span class="badge badge-info">' + r.titleCount + ' 字符</span></div></div>' +
+        '<div style="margin:8px 0 4px;"><span class="badge badge-info">亮点 ≤' + hLimit + '</span>（拆自剩余文案，共 ' + r.highlights.length + ' 段）</div>' + chunkHtml +
         '</div>';
-      copyBuf.push('【标题】' + t.text + '\n【亮点】\n' + chunks.map(function (c) { return '- ' + c; }).join('\n'));
+      copyBuf.push('【标题】' + r.title + '\n【亮点】\n' + (r.highlights.length ? r.highlights.map(function (c) { return '- ' + c; }).join('\n') : '- '));
     });
     box.innerHTML = html;
     $('title-result')._copyBuf = copyBuf.join('\n\n');
@@ -576,37 +536,25 @@
   });
 
   /* =============================================================
-   * 六、大小写转换
+   * 六、大小写转换（合并输出框）
    * ============================================================= */
   document.querySelectorAll('[data-case]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var mode = btn.getAttribute('data-case');
       var lines = $('case-input').value.split('\n');
-      var box = $('case-result');
-      var html = '';
-      var copyBuf = [];
-      lines.forEach(function (line) {
-        var r = L.applyCase(line, mode);
-        copyBuf.push(r);
-        html += '<div class="result-item"><span class="in">' + escapeHtml(line || '&nbsp;') + '</span>' +
-          '<span class="out">' + escapeHtml(r || '&nbsp;') + '</span>' +
-          '<button class="btn btn-outline btn-sm copy-btn">复制</button></div>';
-      });
-      box.innerHTML = html;
-      $('case-result')._copyBuf = copyBuf.join('\n');
-      bindCopyButtons(box);
+      $('case-output').value = lines.map(function (line) { return L.applyCase(line, mode); }).join('\n');
     });
   });
   $('case-copy').addEventListener('click', function () {
-    var buf = $('case-result')._copyBuf;
-    if (buf !== undefined && buf !== '') copyText(buf); else toast('请先转换');
+    var v = $('case-output').value;
+    if (v) copyText(v); else toast('请先转换');
   });
   $('case-clear').addEventListener('click', function () {
-    $('case-input').value = ''; $('case-result').innerHTML = ''; $('case-result')._copyBuf = '';
+    $('case-input').value = ''; $('case-output').value = '';
   });
 
   /* ---------------- 初始化 ---------------- */
-  fillUnitSelects();
-  fillCurrencySelects();
+  buildUnitConverter();
+  buildFxGrid();
   fetchRates(false);
 })();
